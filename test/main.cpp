@@ -11,34 +11,41 @@
 using namespace std;
 using namespace chrono;
 
-int main() {
-	std::string filename = "./circuits/test.real";
-	qc::QuantumComputation qc(filename);
+int main(int argc, char *argv[]) {
 
-	filename = "./circuits/test.qasm";
-	qc.import(filename);
-	qc.dump("test_dump.qasm");
+	//读取real文件
+	std::string fileName = "./circuits/test.real";
+	if(argc==1)
+    {
+		std::cout<<"没有输入参数,使用默认电路"<<std::endl;
 
-	filename = "./circuits/grcs/bris_4_40_9_v2.txt";
-	qc.import(filename);
+ 	}
+	else fileName = argv[1];
 
-	unsigned short n = 3;
-	qc::QFT qft(n); // generates the QFT for n qubits
-
-	n = 2;
-	qc::Grover grover(n); // generates Grover's algorithm for a random n-bit oracle
+	qc::QuantumComputation qc(fileName);
+	//qc::QFT qc(9);
 
 	auto dd = make_unique<dd::Package>(); // create an instance of the DD package
-	auto functionality = qft.buildFunctionality(dd);
-	qft.printMatrix(dd, functionality, std::cout);
-	dd::export2Dot(functionality, "functionality.dot");
-	std::cout << std::endl;
+	auto functionality = qc.buildFunctionality(dd);
+	//qc.printMatrix(dd, functionality, std::cout); //输出矩阵
+	dd::export2Dot(functionality, "test-real.dot"); //输出QMDD表示文件
+	std::cout << dd->size(functionality) << std::endl;
 
+	qc::permutationMap varMap = qc.initialLayout;
+	
+	qc.printPermutationMap(varMap);
+	auto reorderdd = dd->dynamicReorder(functionality, varMap, dd::DynamicReorderingStrategy::Sifting);
+	//qc.printMatrix(dd, reorderdd, std::cout); //输出矩阵
+	dd::export2Dot(reorderdd, "reorderdd.dot"); //输出QMDD表示文件
+	std::cout << dd->size(reorderdd) << std::endl;
+	qc.printPermutationMap(varMap);
+
+/*
 	auto initial_state = dd->makeZeroState(n+1); // create initial state |0...0>
 	auto state_vector = grover.simulate(initial_state, dd);
 	grover.printVector(dd, state_vector, std::cout);
 	dd::export2Dot(state_vector, "state_vector.dot", true);
 	std::cout << std::endl << grover << std::endl;
-
+*/
 	return 0;
 }
