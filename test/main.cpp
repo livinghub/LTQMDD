@@ -23,29 +23,26 @@ int main(int argc, char *argv[]) {
 	else fileName = argv[1];
 
 	qc::QuantumComputation qc(fileName);
-	//qc::QFT qc(9);
 
 	auto dd = make_unique<dd::Package>(); // create an instance of the DD package
 	auto functionality = qc.buildFunctionality(dd);
 	//qc.printMatrix(dd, functionality, std::cout); //输出矩阵
 	dd::export2Dot(functionality, "test-real.dot"); //输出QMDD表示文件
-	std::cout << dd->size(functionality) << std::endl;
+	std::cout << dd->size(functionality) << std::endl; //输出原始dd的大小
 
-	qc::permutationMap varMap = qc.initialLayout;
-	
-	qc.printPermutationMap(varMap);
+	qc::permutationMap varMap = qc.initialLayout; //复制电路的初始变量映射
+	qc.printPermutationMap(varMap); //打印初始映射
+
+	// 调用重排算法
 	auto reorderdd = dd->dynamicReorder(functionality, varMap, dd::DynamicReorderingStrategy::Sifting);
 	//qc.printMatrix(dd, reorderdd, std::cout); //输出矩阵
 	dd::export2Dot(reorderdd, "reorderdd.dot"); //输出QMDD表示文件
-	std::cout << dd->size(reorderdd) << std::endl;
-	qc.printPermutationMap(varMap);
+	std::cout << dd->size(reorderdd) << std::endl; //输出重排后dd的大小
+	qc.printPermutationMap(varMap); //输出重排后的变量映射关系
 
-/*
-	auto initial_state = dd->makeZeroState(n+1); // create initial state |0...0>
-	auto state_vector = grover.simulate(initial_state, dd);
-	grover.printVector(dd, state_vector, std::cout);
-	dd::export2Dot(state_vector, "state_vector.dot", true);
-	std::cout << std::endl << grover << std::endl;
-*/
+	//判断重排前后dd是否一致
+	std::cout << "重排电路是否一致： " << dd->equals(functionality, reorderdd) << std::endl;
+
+
 	return 0;
 }
